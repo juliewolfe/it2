@@ -1,0 +1,9 @@
+Donc les fonctions à implémenter pour la première partie sont (en principe) :
+- miroir(), creer_automate_minimal(),
+- numeroter_rationnel(), contient_mot_vide(),
+- premier(), dernier(), suivant(),
+- Glushkov()
+
+Et tant qu'on y est, pour générer le fichier pdf qui affiche l'arbre d'une expression rationnelle :
+dot -Tpdf fichier.dot -o fichier.pdf
+(Les fonctions expression_to_rationnel() et rationnel_to_dot() sont fournies dans le code)
