@@ -1,0 +1,26 @@
+Chaque lettre contient sa position dans l'arbre de gauche à droite :
+
+		*
+		|
+	-----------------
+	|		|
+	.		+
+	|		|
+    ---------	    ---------
+    |	    |	    |	    |
+    A	    B	    C	    D
+
+A : min=1, max=1
+B : min=2, max=2
+C : min=3, max=3
+D : min=4, max=4
+
+Chaque noeud contient les positions min et max de l'ensemble du sous-arbre :
+
+* : min=1, max=4
+. : min=1, max=2
++ : min=3, max=4
+
+ /!\
+
+numeroter_rationnel est du PSEUDO-CODE.

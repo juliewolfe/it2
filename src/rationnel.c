@@ -30,7 +30,11 @@
 #include <assert.h>
 #include <stdio.h>
 
+// Enlever les @note
+
 int yyparse(Rationnel **rationnel, yyscan_t scanner);
+
+// CONSTRUCTEURS @note
 
 Rationnel *rationnel(Noeud etiquette, char lettre, int position_min, int position_max, void *data, Rationnel *gauche, Rationnel *droit, Rationnel *pere)
 {
@@ -47,6 +51,8 @@ Rationnel *rationnel(Noeud etiquette, char lettre, int position_min, int positio
    rat->pere = pere;
    return rat;
 }
+
+// SETTERS @note
 
 Rationnel *Epsilon()
 {
@@ -90,6 +96,8 @@ Rationnel *Star(Rationnel* rat)
    return rationnel(STAR, 0, 0, 0, NULL, rat, NULL, NULL);
 }
 
+// GETTERS @note
+
 bool est_racine(Rationnel* rat)
 {
    return (rat->pere == NULL);
@@ -118,6 +126,8 @@ int get_position_max(Rationnel* rat)
    return rat->position_max;
 }
 
+// SETTERS @note
+
 void set_position_min(Rationnel* rat, int valeur)
 {
    assert (get_etiquette(rat) == LETTRE);
@@ -131,6 +141,8 @@ void set_position_max(Rationnel* rat, int valeur)
    rat->position_max = valeur;
    return;
 }
+
+// GETTERS @note
 
 Rationnel *fils_gauche(Rationnel* rat)
 {
@@ -155,6 +167,8 @@ Rationnel *pere(Rationnel* rat)
    assert(!est_racine(rat));
    return rat->pere;
 }
+
+// TOSTRING @note
 
 void print_rationnel(Rationnel* rat)
 {
@@ -201,6 +215,8 @@ void print_rationnel(Rationnel* rat)
          break;
    }
 }
+
+// PARSING & OUTFILE @note
 
 Rationnel *expression_to_rationnel(const char *expr)
 {
@@ -279,13 +295,53 @@ int rationnel_to_dot_aux(Rationnel *rat, FILE *output, int pere, int noeud_coura
    return noeud_courant;
 }
 
-void numeroter_rationnel(Rationnel *rat)
-{
-   A_FAIRE;
+// TODO 1ST PART @note
+
+int numeroter_rationnel_aux (Rationnel* noeud, int m){
+   switch(get_etiquette(noeud)){
+      case EPSILON :
+         return m;
+      case LETTRE :
+         noeud.min = (noeud.max = m);
+         m++;
+         return m;
+      case UNION || CONCAT :
+         noeud.min = m;
+         m = numeroter_rationnel_aux(gauche, m);
+         m = numeroter_rationnel_aux(droite, m);
+         noeud.max = m-1;
+         return m;
+      case STAR :
+         noeud.min = m;
+         m = numeroter_rationnel_aux (gauche, m);
+         if (!droite=NULL)
+            m = numeroter_rationnel_aux(droite, m);
+         noeud.max = m-1;
+         return m;
+      default:
+         return 0;
+   }
 }
+
+void numeroter_rationnel (Rationnel* racine){
+   if (!racine)
+      numeroter_rationnel_aux(racine, 1);
+}
+
+// Sous-fonctions de Glushkov @note
 
 bool contient_mot_vide(Rationnel *rat)
 {
+   // Switch/case pour tous les cas
+   // Remonter l'arbre depuis les feuilles : les lettres renvoient toujours false
+   // On entre dans un noeud qui n'est pas une lettre, on crée deux booléens gauche et droite
+   // Si UNION : gauche ou droite doit valoir true
+   // Si CONCAT : gauche ET droite doivent valoir true
+   // Si STAR ou EPSILON : true
+   // Si LETTRE : false
+   // Une fois remontés à la racine, la valeur renvoyée est la bonne
+   // CONCLUSION
+   // On utilise récursivement cette fonction, mais elle l'est pas.
    A_FAIRE_RETURN(true);
 }
 
@@ -294,8 +350,45 @@ Ensemble *premier(Rationnel *rat)
    A_FAIRE_RETURN(NULL);
 }
 
+/*
+Rationnel *miroir_expression_rationnelle(Rationnel *rat)
+{
+   if(!rat)
+      return NULL;
+
+   Rationnel *f1, *f2;
+   switch(get_etiquette(rat)){
+      case EPSILON:
+         return Epsilon();
+         break;
+      case LETTRE:
+         return Lettre(get_lettre(rat));
+         break;
+      case UNION:
+         f1 = miroir_expression_rationnelle(fils_gauche(rat));
+         f2 = miroir_expression_rationnelle(fils_droit(rat));
+         return Union(f1, f2);
+         break;
+      case CONCAT:
+         f1 = miroir_expression_rationnelle(fils_gauche(rat));
+         f2 = miroir_expression_rationnelle(fils_droit(rat));
+         return Concat(f2, f1);
+         break;
+      case STAR:
+         f1 = miroir_expression_rationnelle(fils(rat));
+         return Star(f1);
+         break;
+      default:
+         assert(false);
+         break;
+   }
+}
+*/
+
 Ensemble *dernier(Rationnel *rat)
 {
+   // Utiliser la fonction commentée juste avant
+   // Car chercher les derniers, c'est chercher les premiers de l'expression miroir (probablement)
    A_FAIRE_RETURN(NULL);
 }
 
@@ -304,20 +397,30 @@ Ensemble *suivant(Rationnel *rat, int position)
    A_FAIRE_RETURN(NULL);
 }
 
+// Glushkov @note
+
 Automate *Glushkov(Rationnel *rat)
 {
    A_FAIRE_RETURN(NULL);
 }
 
+// La véritable raison (de vivre) de Glushkov @note
+
 bool meme_langage (const char *expr1, const char* expr2)
 {
+   // expr ---(expr_to_rationnel)--> Rationnel* ---(Glushkov)--> Automate*
+   // On minimalise les automates, et on les compare
    A_FAIRE_RETURN(true);
 }
+
+// TODO 2ND PART @note
 
 Systeme systeme(Automate *automate)
 {
    A_FAIRE_RETURN(NULL);
 }
+
+// PRINTS @note
 
 void print_ligne(Rationnel **ligne, int n)
 {
@@ -339,6 +442,8 @@ void print_systeme(Systeme systeme, int n)
    }
 }
 
+// TODO 2ND PART @note
+
 Rationnel **resoudre_variable_arden(Rationnel **ligne, int numero_variable, int n)
 {
    A_FAIRE_RETURN(NULL);
@@ -358,4 +463,3 @@ Rationnel *Arden(Automate *automate)
 {
    A_FAIRE_RETURN(NULL);
 }
-

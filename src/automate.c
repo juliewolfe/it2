@@ -639,6 +639,8 @@ Automate *automate_accessible( const Automate * automate ){
 	return res;
 }
 
+// TODO @note
+
 Automate* renverser_automate( const Automate* automate ){
 	Automate * res = creer_automate();
 	Ensemble_iterateur it1;
@@ -886,7 +888,11 @@ Automate * creer_automate_minimal( const Automate* automate ){
    liberer_automate(a1);
    a1 = creer_automate_deterministe(a);
    liberer_automate(a);
+   //a = creer_automate_deterministe(a);
+   //a = miroir(a);
+   //a = creer_automate_deterministe(a);
 
-   return a1; 
+   return a1;
+   //return a; 
 }
 
