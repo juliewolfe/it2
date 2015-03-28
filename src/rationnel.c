@@ -296,27 +296,28 @@ int rationnel_to_dot_aux(Rationnel *rat, FILE *output, int pere, int noeud_coura
 }
 
 // TODO 1ST PART @note
+// Doit-on faire avec les accesseurs ou avec les champs de la structure ? On y a accès depuis ici après tout. @note
 
 int numeroter_rationnel_aux (Rationnel* noeud, int m){
    switch(get_etiquette(noeud)){
       case EPSILON :
          return m;
       case LETTRE :
-         noeud.min = (noeud.max = m);
+         noeud->position_min = (noeud->position_max = m);
          m++;
          return m;
       case UNION || CONCAT :
-         noeud.min = m;
-         m = numeroter_rationnel_aux(gauche, m);
-         m = numeroter_rationnel_aux(droite, m);
-         noeud.max = m-1;
+         noeud->position_min = m;
+         m = numeroter_rationnel_aux(noeud->gauche, m);
+         m = numeroter_rationnel_aux(noeud->droite, m);
+         noeud->position_max = m-1;
          return m;
       case STAR :
-         noeud.min = m;
-         m = numeroter_rationnel_aux (gauche, m);
-         if (!droite=NULL)
-            m = numeroter_rationnel_aux(droite, m);
-         noeud.max = m-1;
+         noeud->position_min = m;
+         m = numeroter_rationnel_aux (noeud->gauche, m);
+         if (!noeud->droite=NULL)
+            m = numeroter_rationnel_aux(noeud->droite, m);
+         noeud->position_max = m-1;
          return m;
       default:
          return 0;
@@ -332,25 +333,67 @@ void numeroter_rationnel (Rationnel* racine){
 
 bool contient_mot_vide(Rationnel *rat)
 {
-   // Switch/case pour tous les cas
-   // Remonter l'arbre depuis les feuilles : les lettres renvoient toujours false
-   // On entre dans un noeud qui n'est pas une lettre, on crée deux booléens gauche et droite
-   // Si UNION : gauche ou droite doit valoir true
-   // Si CONCAT : gauche ET droite doivent valoir true
-   // Si STAR ou EPSILON : true
-   // Si LETTRE : false
-   // Une fois remontés à la racine, la valeur renvoyée est la bonne
-   // CONCLUSION
-   // On utilise récursivement cette fonction, mais elle l'est pas.
-   A_FAIRE_RETURN(true);
+   switch(get_etiquette(rat)){
+      case EPSILON:
+         return true;
+         break;
+      case LETTRE:
+         return false;
+         break;
+      case CONCAT:
+         return contient_mot_vide(fils_gauche(rat))&&contient_mot_vide(fils_droit(rat));
+         break;
+      case UNION:
+         return contient_mot_vide(fils_gauche(rat))||contient_mot_vide(fils_droit(rat));
+         break;
+      case STAR:
+         return true;
+         break;
+      default:
+         return NULL;
+   }
 }
 
-Ensemble *premier(Rationnel *rat)
+// ATTENTION ! IL FAUDRA UTILISER LA STRUCTURE "ENSEMBLE" A TERME @note
+// Pourquoi pas écrire une fonction transformant un [tab + ind] en Ensemble ? Plus simple, on a le nb d'éléments dans ind
+
+bool premier_aux (Rationnel * rat, int* tab, int ind){
+   switch(get_etiquette(rat)){
+      case EPSILON:
+         return false;
+         break;
+      case LETTRE:
+         tab[*ind] = get_position_min(rat);
+         *ind++;
+         return true;
+         break;
+      case STAR:
+         return false;
+         break;
+      case UNION:
+         return premier_aux(fils_gauche(rat)) || premier_aux(fils_droit(rat));
+         break;
+      case CONCAT:
+         if (premier_aux(fils_gauche(rat)))
+            return true;
+         premier_aux(fils_droit(rat));
+         break;
+      default:
+         return;
+   }
+}
+
+// Mauvaise valeur de retour, voir plus haut @note
+
+Ensemble * premier(Rationnel *rat)
 {
-   A_FAIRE_RETURN(NULL);
+   int n = numeroter_rationnel_aux(rat, 0) -1; // Vaut par conséquent le nombre de lettres de l'expression rationnelle
+   int* tab = malloc(n*sizeof(int));
+   n = 0; // Economie de variables
+   premier_aux(rat, tab, n);
+   return tab; 
 }
 
-/*
 Rationnel *miroir_expression_rationnelle(Rationnel *rat)
 {
    if(!rat)
@@ -383,18 +426,107 @@ Rationnel *miroir_expression_rationnelle(Rationnel *rat)
          break;
    }
 }
-*/
 
 Ensemble *dernier(Rationnel *rat)
 {
-   // Utiliser la fonction commentée juste avant
-   // Car chercher les derniers, c'est chercher les premiers de l'expression miroir (probablement)
-   A_FAIRE_RETURN(NULL);
+   Rationnel r = miroir_expression_rationnelle(rat);
+   return premier(r);
 }
+
+// Pour "suivant" @note
+// Parcours itératif de l'arbre, et à chaque noeud "LETTRE" on teste la position, on return si c'est la bonne @note
+// Autre solution plus optimale, utiliser les position_min et position_max des noeuds @note
+
+Rationnel* find_position(Rationnel* rat, int position){
+
+   Rationnel* last = NULL;
+   Rationnel* next = NULL;
+
+   while (rat != NULL){
+
+      if (get_etiquette(rat) == LETTRE && get_position_min(rat) == position) // Si c'est une lettre et que c'est la position recherchée
+         return rat;
+
+      if (last == pere(rat))
+      {
+         last = rat;
+         next = fils_gauche(rat);
+      }
+      
+      if (next == NULL || last == fils_gauche(rat))
+      {
+         last = rat;
+         next = fils_droit(rat);
+      }
+      
+      if (next == NULL || last == fils_droit(rat))
+      {
+         last = rat;
+         next = pere(rat);
+      }
+
+      rat = next;
+
+   }
+
+   return NULL; // Précaution
+
+}
+
+// Pseudo-code pour l'instant. Avant de la finaliser, peut-^etre s'intéresser à la structure Ensemble. @note
 
 Ensemble *suivant(Rationnel *rat, int position)
 {
-   A_FAIRE_RETURN(NULL);
+   /*
+   ALGORITHME :
+   parcours jusqu'à la position
+   remonter l'arbre :
+   - si UNION :
+      remonter // Dans (a+b), on se fiche de laquelle a été mise, l'autre ne le sera pas
+   - si CONCAT :
+      - si FG :
+         premier_aux(FD)
+      remonter // Dans (a.b), si on a mis a (FG), on doit mettre b (globalement, les "premier" du FD), sinon rien à mettre
+   - si EPSILON :
+      remonter
+   - si STAR :
+      premier_aux(self) // Dans R*, quelle que soit R, on peut mettre les "premier" de R
+      remonter
+   - si LETTRE :
+      normalement impossible puisqu'on ne fait que remonter
+   une fois à la racine, on renvoie.
+   */
+
+   int n = numeroter_rationnel_aux(rat, 0) -1; // Voir avec les Ensemble, ne pas oublier @note
+   int* tab = malloc(n*sizeof(int));
+   n = 0;
+
+   rat = find_position(rat, position);
+
+   while (rat!=NULL){
+
+      switch (get_etiquette(rat)){
+         case EPSILON:
+            rat = pere(rat);
+            break;
+         case UNION:
+            rat = pere(rat);
+            break;
+         case CONCAT:
+            if (rat == fils_gauche(pere(rat)))
+               premier_aux(fils_droit(pere(rat)), tab, n);
+            rat = pere(rat);
+            break;
+         case STAR:
+            premier_aux(rat, tab, n);
+            break;
+         default:
+            return;
+      }
+      
+   }
+
+   return tab;
 }
 
 // Glushkov @note

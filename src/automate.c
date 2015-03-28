@@ -641,7 +641,9 @@ Automate *automate_accessible( const Automate * automate ){
 
 // TODO @note
 
-Automate* renverser_automate( const Automate* automate ){
+// renverser_automate devenu miroir @note
+
+Automate* miroir( const Automate* automate ){
 	Automate * res = creer_automate();
 	Ensemble_iterateur it1;
 	// On ajoute les états de l'automate
@@ -695,10 +697,6 @@ Automate* renverser_automate( const Automate* automate ){
 		}
 	}
 	return res;
-}
-
-Automate *miroir( const Automate * automate){
- 	return renverser_automate(automate);
 }
 
 void action_nombre_de_transitions(
