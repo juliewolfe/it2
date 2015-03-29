@@ -296,66 +296,117 @@ int rationnel_to_dot_aux(Rationnel *rat, FILE *output, int pere, int noeud_coura
 }
 
 // TODO 1ST PART @note
-// Doit-on faire avec les accesseurs ou avec les champs de la structure ? On y a accès depuis ici après tout. @note
+
+/*/
+ * Numéroter rationnel :
+ * Chaque lettre enregistre sa position dans l'expression rationnelle.
+ * Chaque sommet contient la position minimale et maximale des lettres contenues dans ses fils.
+/*/
 
 int numeroter_rationnel_aux (Rationnel* noeud, int m){
+   // Cette fonction renvoie le nombre de lettres de l'expression +1
+   // Pratique pour numeroter les lettres et récupérer leur nombre.
+
    switch(get_etiquette(noeud)){
+
       case EPSILON :
+      // On ne le considère pas comme une lettre, donc pas d'incrémentation,
+      // cependant sa position est, par conséquent, la meme que la lettre suivante.
+      // Cela reste un pur choix de notre part, nous aurions pu mettre "0", par exemple.
+         set_position_min(noeud, m);
+         set_position_max(noeud, m);
          return m;
+         break;
+
       case LETTRE :
-         noeud->position_min = (noeud->position_max = m);
+      // On "set" les deux positions, simple précaution, on pourrait en choisir qu'une
+         set_position_min(noeud, m);
+         set_position_max(noeud, m);
          m++;
          return m;
-      case UNION || CONCAT :
-         noeud->position_min = m;
-         m = numeroter_rationnel_aux(noeud->gauche, m);
-         m = numeroter_rationnel_aux(noeud->droite, m);
-         noeud->position_max = m-1;
+         break;
+
+      case UNION :
+      case CONCAT :
+      // Petit mix de parcours préfixe/postfixe. Le deuxième "set" est de "m-1" car
+      // on incrémente par défaut après chaque lettre. Avec cela, on a, à chaque noeud :
+      // get_position_min(noeud) <= position d'une lettre <= get_position_max(noeud)
+         set_position_min(noeud, m);
+         m = numeroter_rationnel_aux(fils_gauche(noeud), m);
+         m = numeroter_rationnel_aux(fils_droit(noeud), m);
+         set_position_max(noeud, m-1);
          return m;
+         break;
+
       case STAR :
-         noeud->position_min = m;
-         m = numeroter_rationnel_aux (noeud->gauche, m);
-         if (!noeud->droite=NULL)
-            m = numeroter_rationnel_aux(noeud->droite, m);
-         noeud->position_max = m-1;
+      // Simple cas particulier du précédent (pas de fils droit).
+         set_position_min(noeud, m);
+         m = numeroter_rationnel_aux(fils_gauche(noeud), m);
+         set_position_max(noeud, m-1);
          return m;
+         break;
+
       default:
          return 0;
+
    }
+
 }
 
 void numeroter_rationnel (Rationnel* racine){
-   if (!racine)
+   if (racine!=NULL)
       numeroter_rationnel_aux(racine, 1);
 }
 
 // Sous-fonctions de Glushkov @note
 
-bool contient_mot_vide(Rationnel *rat)
-{
+/*/
+ * Contient mot vide :
+ * Renvoie "true" si le langage exprimé par l'expression rationnelle en question peut
+ * contenir le mot vide.
+/*/
+
+bool contient_mot_vide(Rationnel *rat){
+
    switch(get_etiquette(rat)){
+
       case EPSILON:
+      // Renvoie "true" car si un mot ne contient qu'Epsilon, c'est le mot vide.
          return true;
          break;
+
       case LETTRE:
+      // Une lettre renvoie "false", elle ne peut valoir le mot vide.
          return false;
          break;
-      case CONCAT:
-         return contient_mot_vide(fils_gauche(rat))&&contient_mot_vide(fils_droit(rat));
-         break;
-      case UNION:
-         return contient_mot_vide(fils_gauche(rat))||contient_mot_vide(fils_droit(rat));
-         break;
+
       case STAR:
+      // Renvoie "true" car une expression étoilée peut valoir le mot vide, peu
+      // importe son fils.
          return true;
          break;
+
+      // Les deux suivants ne sont ensuite que composition des précédents.
+
+      case CONCAT:
+      // Les deux doivent pouvoir etre vides pour pouvoir renvoyer "true"...
+         return contient_mot_vide(fils_gauche(rat)) && contient_mot_vide(fils_droit(rat));
+         break;
+
+      case UNION:
+      // ... et ici un seul des deux suffit.
+         return contient_mot_vide(fils_gauche(rat)) || contient_mot_vide(fils_droit(rat));
+         break;
+
       default:
          return NULL;
+
    }
+
 }
 
 // ATTENTION ! IL FAUDRA UTILISER LA STRUCTURE "ENSEMBLE" A TERME @note
-// Pourquoi pas écrire une fonction transformant un [tab + ind] en Ensemble ? Plus simple, on a le nb d'éléments dans ind
+// Pourquoi pas écrire une fonction transformant un [tab + ind] en Ensemble ? Plus simple, on a le nb d'éléments dans ind @note
 
 bool premier_aux (Rationnel * rat, int* tab, int ind){
    switch(get_etiquette(rat)){
@@ -427,8 +478,8 @@ Rationnel *miroir_expression_rationnelle(Rationnel *rat)
    }
 }
 
-Ensemble *dernier(Rationnel *rat)
-{
+Ensemble *dernier(Rationnel *rat){
+   // L'ensemble des derniers n'est, au final, que l'ensemble des premiers de l'expression miroir...
    Rationnel r = miroir_expression_rationnelle(rat);
    return premier(r);
 }
@@ -444,7 +495,8 @@ Rationnel* find_position(Rationnel* rat, int position){
 
    while (rat != NULL){
 
-      if (get_etiquette(rat) == LETTRE && get_position_min(rat) == position) // Si c'est une lettre et que c'est la position recherchée
+      if (get_etiquette(rat) == LETTRE && get_position_min(rat) == position)
+      // Si c'est une lettre et que c'est la position recherchée
          return rat;
 
       if (last == pere(rat))
@@ -531,6 +583,17 @@ Ensemble *suivant(Rationnel *rat, int position)
 
 // Glushkov @note
 
+/* Fonctions pour Glushkov @note
+Automate * creer_automate();
+void liberer_automate( Automate * automate);
+
+void ajouter_etat( Automate * automate, int etat );
+void ajouter_lettre( Automate * automate, char lettre );
+void ajouter_transition( Automate * automate, int origine, char lettre, int fin );
+void ajouter_etat_final( Automate * automate, int etat_final );
+void ajouter_etat_initial( Automate * automate, int etat_initial );
+*/
+
 Automate *Glushkov(Rationnel *rat)
 {
    A_FAIRE_RETURN(NULL);
@@ -542,8 +605,23 @@ bool meme_langage (const char *expr1, const char* expr2)
 {
    // expr ---(expr_to_rationnel)--> Rationnel* ---(Glushkov)--> Automate*
    // On minimalise les automates, et on les compare
+   Rationnel* rat1, rat2;
+   rat1 = expression_to_rationnel(expr1);
+   rat2 = expression_to_rationnel(expr2);
+
+   Automate aut1, aut2;
+   aut1 = Glushkov(rat1);
+   aut2 = Glushkov(rat2);
+
+   aut1 = creer_automate_minimal(aut1);
+   aut2 = creer_automate_minimal(aut2);
+
+   // Reste à les comparer
+
    A_FAIRE_RETURN(true);
 }
+
+// <!--
 
 // TODO 2ND PART @note
 
@@ -595,3 +673,5 @@ Rationnel *Arden(Automate *automate)
 {
    A_FAIRE_RETURN(NULL);
 }
+
+// -->

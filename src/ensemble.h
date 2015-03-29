@@ -49,13 +49,13 @@ typedef struct avl_traverser Ensemble_iterateur;
  *
  * L'ensemble peut contenir des entiers, codés à l'aide du type intptr_t.
  * Mais il peut aussi contenir des pointeurs vers des structures plus complexes.
- * Dans ce cas, c'est l'ensmeble qui devient le responsable de la mémoire des 
+ * Dans ce cas, c'est l'ensemble qui devient le responsable de la mémoire des 
  * éléments situé à l'interieur de l'ensemble.
  * Pour pouvoir gérer cette mémoire, l'ensemble à besoin des fonctions :
  *   - int comparer_element( const intptr_t elem1, const intptr_t elem2 ),
  *   - intptr_t copier_element( const intptr_t elem ),
  *   - void supprimer_element( intptr_t elem ),
- * qui permettent de comaprer, upprimer et copier des éléments de l'ensemble.
+ * qui permettent de comparer, supprimer et copier des éléments de l'ensemble.
  *
  */
 Ensemble * creer_ensemble(
