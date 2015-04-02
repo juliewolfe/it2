@@ -110,19 +110,16 @@ Noeud get_etiquette(Rationnel* rat)
 
 char get_lettre(Rationnel* rat)
 {
-   assert (get_etiquette(rat) == LETTRE);
    return rat->lettre;
 }
 
 int get_position_min(Rationnel* rat)
 {
-   assert (get_etiquette(rat) == LETTRE);
    return rat->position_min;
 }
 
 int get_position_max(Rationnel* rat)
 {
-   assert (get_etiquette(rat) == LETTRE);
    return rat->position_max;
 }
 
@@ -130,14 +127,12 @@ int get_position_max(Rationnel* rat)
 
 void set_position_min(Rationnel* rat, int valeur)
 {
-   assert (get_etiquette(rat) == LETTRE);
    rat->position_min = valeur;
    return;
 }
 
 void set_position_max(Rationnel* rat, int valeur)
 {
-   assert (get_etiquette(rat) == LETTRE);
    rat->position_max = valeur;
    return;
 }
@@ -146,25 +141,21 @@ void set_position_max(Rationnel* rat, int valeur)
 
 Rationnel *fils_gauche(Rationnel* rat)
 {
-   assert((get_etiquette(rat) == CONCAT) || (get_etiquette(rat) == UNION));
    return rat->gauche;
 }
 
 Rationnel *fils_droit(Rationnel* rat)
 {
-   assert((get_etiquette(rat) == CONCAT) || (get_etiquette(rat) == UNION));
    return rat->droit;
 }
 
 Rationnel *fils(Rationnel* rat)
 {
-   assert(get_etiquette(rat) == STAR);
    return rat->gauche;
 }
 
 Rationnel *pere(Rationnel* rat)
 {
-   assert(!est_racine(rat));
    return rat->pere;
 }
 
@@ -211,7 +202,6 @@ void print_rationnel(Rationnel* rat)
          break;
 
       default:
-         assert(false);
          break;
    }
 }
@@ -287,7 +277,6 @@ int rationnel_to_dot_aux(Rationnel *rat, FILE *output, int pere, int noeud_coura
          break;
          
       default:
-         assert(false);
          break;
    }
    if (pere < 0)
@@ -408,41 +397,47 @@ bool contient_mot_vide(Rationnel *rat){
 // ATTENTION ! IL FAUDRA UTILISER LA STRUCTURE "ENSEMBLE" A TERME @note
 // Pourquoi pas écrire une fonction transformant un [tab + ind] en Ensemble ? Plus simple, on a le nb d'éléments dans ind @note
 
-bool premier_aux (Rationnel * rat, int* tab, int ind){
+bool premier_aux (Rationnel * rat, Ensemble * ens){
    switch(get_etiquette(rat)){
       case EPSILON:
          return false;
          break;
       case LETTRE:
-         tab[*ind] = get_position_min(rat);
-         *ind++;
+         ajouter_element(ens, get_position_min(rat));
          return true;
          break;
       case STAR:
+         premier_aux(fils_gauche(rat), ens);
          return false;
          break;
       case UNION:
-         return premier_aux(fils_gauche(rat)) || premier_aux(fils_droit(rat));
+         if (premier_aux(fils_gauche(rat), ens)) {
+            premier_aux(fils_droit(rat), ens);
+            return true;
+         }
+         return premier_aux(fils_droit(rat), ens);
          break;
       case CONCAT:
-         if (premier_aux(fils_gauche(rat)))
+         if (premier_aux(fils_gauche(rat), ens))
             return true;
-         premier_aux(fils_droit(rat));
+         premier_aux(fils_droit(rat), ens);
          break;
       default:
-         return;
+         return NULL;
    }
+
+   return NULL;
 }
 
 // Mauvaise valeur de retour, voir plus haut @note
 
 Ensemble * premier(Rationnel *rat)
 {
-   int n = numeroter_rationnel_aux(rat, 0) -1; // Vaut par conséquent le nombre de lettres de l'expression rationnelle
-   int* tab = malloc(n*sizeof(int));
-   n = 0; // Economie de variables
-   premier_aux(rat, tab, n);
-   return tab; 
+   Ensemble * e = creer_ensemble(NULL, NULL, NULL);
+
+   premier_aux(rat, e);
+
+   return e; 
 }
 
 Rationnel *miroir_expression_rationnelle(Rationnel *rat)
@@ -473,14 +468,15 @@ Rationnel *miroir_expression_rationnelle(Rationnel *rat)
          return Star(f1);
          break;
       default:
-         assert(false);
          break;
    }
+
+   return NULL;
 }
 
 Ensemble *dernier(Rationnel *rat){
    // L'ensemble des derniers n'est, au final, que l'ensemble des premiers de l'expression miroir...
-   Rationnel r = miroir_expression_rationnelle(rat);
+   Rationnel * r = miroir_expression_rationnelle(rat);
    return premier(r);
 }
 
@@ -489,40 +485,38 @@ Ensemble *dernier(Rationnel *rat){
 // Autre solution plus optimale, utiliser les position_min et position_max des noeuds @note
 
 Rationnel* find_position(Rationnel* rat, int position){
-
-   Rationnel* last = NULL;
-   Rationnel* next = NULL;
-
-   while (rat != NULL){
-
-      if (get_etiquette(rat) == LETTRE && get_position_min(rat) == position)
-      // Si c'est une lettre et que c'est la position recherchée
-         return rat;
-
-      if (last == pere(rat))
-      {
-         last = rat;
-         next = fils_gauche(rat);
-      }
-      
-      if (next == NULL || last == fils_gauche(rat))
-      {
-         last = rat;
-         next = fils_droit(rat);
-      }
-      
-      if (next == NULL || last == fils_droit(rat))
-      {
-         last = rat;
-         next = pere(rat);
-      }
-
-      rat = next;
-
+   if (get_etiquette(rat) == LETTRE && get_position_min(rat) == position)
+   {
+      return rat;
    }
 
-   return NULL; // Précaution
+   if (fils_droit(rat) != NULL && get_position_min(fils_droit(rat)) <= position)
+   {
+      return find_position(fils_droit(rat), position);
+   }
 
+   if (fils_gauche(rat) != NULL)
+   {
+      return find_position(fils_gauche(rat), position);
+   }
+
+   return NULL;
+
+}
+
+void pere_a_jour(Rationnel * rat, Rationnel * last)
+{
+   rat->pere = last;
+
+   if (fils_gauche(rat) != NULL)
+   {
+      pere_a_jour(fils_gauche(rat), rat);
+   }
+
+   if (fils_droit(rat) != NULL)
+   {
+      pere_a_jour(fils_droit(rat), rat);
+   }
 }
 
 // Pseudo-code pour l'instant. Avant de la finaliser, peut-^etre s'intéresser à la structure Ensemble. @note
@@ -549,36 +543,35 @@ Ensemble *suivant(Rationnel *rat, int position)
    une fois à la racine, on renvoie.
    */
 
-   int n = numeroter_rationnel_aux(rat, 0) -1; // Voir avec les Ensemble, ne pas oublier @note
-   int* tab = malloc(n*sizeof(int));
-   n = 0;
+   Ensemble * ens = creer_ensemble(NULL, NULL, NULL);
 
-   rat = find_position(rat, position);
+   Rationnel * r = find_position(rat, position);
+   Rationnel * last;
 
-   while (rat!=NULL){
+   pere_a_jour(rat, NULL);
+   while (r!=NULL){
 
-      switch (get_etiquette(rat)){
+      switch (get_etiquette(r)){
+         case LETTRE:
          case EPSILON:
-            rat = pere(rat);
-            break;
          case UNION:
-            rat = pere(rat);
             break;
          case CONCAT:
-            if (rat == fils_gauche(pere(rat)))
-               premier_aux(fils_droit(pere(rat)), tab, n);
-            rat = pere(rat);
+            if (last == fils_gauche(r))
+               premier_aux(fils_droit(r), ens);
             break;
          case STAR:
-            premier_aux(rat, tab, n);
+            premier_aux(r, ens);
             break;
          default:
-            return;
+            return NULL;
       }
+      last = r;
+      r = r->pere;
       
    }
 
-   return tab;
+   return ens;
 }
 
 // Glushkov @note
@@ -596,7 +589,31 @@ void ajouter_etat_initial( Automate * automate, int etat_initial );
 
 Automate *Glushkov(Rationnel *rat)
 {
-   A_FAIRE_RETURN(NULL);
+   Automate* aut = creer_automate();
+
+   Ensemble * ens = premier(rat);
+   Ensemble_iterateur it = premier_iterateur_ensemble(ens);
+   while(iterateur_ensemble_est_vide(it)!=1) {
+      ajouter_etat_initial(aut, get_element(it));
+      it = iterateur_suivant_ensemble(it);
+   }
+   
+   ens = dernier(rat);
+   it = premier_iterateur_ensemble(ens);
+   while(iterateur_ensemble_est_vide(it)!=1) {
+      ajouter_etat_final(aut, get_element(it));
+      it = iterateur_suivant_ensemble(it);
+   }
+
+   
+   return NULL;
+
+
+
+
+
+
+
 }
 
 // La véritable raison (de vivre) de Glushkov @note
@@ -605,11 +622,11 @@ bool meme_langage (const char *expr1, const char* expr2)
 {
    // expr ---(expr_to_rationnel)--> Rationnel* ---(Glushkov)--> Automate*
    // On minimalise les automates, et on les compare
-   Rationnel* rat1, rat2;
+   Rationnel* rat1, *rat2;
    rat1 = expression_to_rationnel(expr1);
    rat2 = expression_to_rationnel(expr2);
 
-   Automate aut1, aut2;
+   Automate * aut1, *aut2;
    aut1 = Glushkov(rat1);
    aut2 = Glushkov(rat2);
 
