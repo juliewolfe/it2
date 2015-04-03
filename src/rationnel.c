@@ -30,11 +30,10 @@
 #include <assert.h>
 #include <stdio.h>
 
-// Enlever les @note
+
 
 int yyparse(Rationnel **rationnel, yyscan_t scanner);
 
-// CONSTRUCTEURS @note
 
 Rationnel *rationnel(Noeud etiquette, char lettre, int position_min, int position_max, void *data, Rationnel *gauche, Rationnel *droit, Rationnel *pere)
 {
@@ -52,7 +51,7 @@ Rationnel *rationnel(Noeud etiquette, char lettre, int position_min, int positio
    return rat;
 }
 
-// SETTERS @note
+
 
 Rationnel *Epsilon()
 {
@@ -96,7 +95,7 @@ Rationnel *Star(Rationnel* rat)
    return rationnel(STAR, 0, 0, 0, NULL, rat, NULL, NULL);
 }
 
-// GETTERS @note
+
 
 bool est_racine(Rationnel* rat)
 {
@@ -123,7 +122,6 @@ int get_position_max(Rationnel* rat)
    return rat->position_max;
 }
 
-// SETTERS @note
 
 void set_position_min(Rationnel* rat, int valeur)
 {
@@ -137,7 +135,6 @@ void set_position_max(Rationnel* rat, int valeur)
    return;
 }
 
-// GETTERS @note
 
 Rationnel *fils_gauche(Rationnel* rat)
 {
@@ -159,7 +156,6 @@ Rationnel *pere(Rationnel* rat)
    return rat->pere;
 }
 
-// TOSTRING @note
 
 void print_rationnel(Rationnel* rat)
 {
@@ -206,7 +202,6 @@ void print_rationnel(Rationnel* rat)
    }
 }
 
-// PARSING & OUTFILE @note
 
 Rationnel *expression_to_rationnel(const char *expr)
 {
@@ -284,7 +279,6 @@ int rationnel_to_dot_aux(Rationnel *rat, FILE *output, int pere, int noeud_coura
    return noeud_courant;
 }
 
-// TODO 1ST PART @note
 
 /*/
  * Numéroter rationnel :
@@ -294,7 +288,7 @@ int rationnel_to_dot_aux(Rationnel *rat, FILE *output, int pere, int noeud_coura
 
 int numeroter_rationnel_aux (Rationnel* noeud, int m){
    // Cette fonction renvoie le nombre de lettres de l'expression +1
-   // Pratique pour numeroter les lettres et récupérer leur nombre.
+   // Plus pratique pour numeroter les lettres et récupérer leur nombre.
 
    switch(get_etiquette(noeud)){
 
@@ -347,7 +341,6 @@ void numeroter_rationnel (Rationnel* racine){
       numeroter_rationnel_aux(racine, 1);
 }
 
-// Sous-fonctions de Glushkov @note
 
 /*/
  * Contient mot vide :
@@ -394,23 +387,48 @@ bool contient_mot_vide(Rationnel *rat){
 
 }
 
-// ATTENTION ! IL FAUDRA UTILISER LA STRUCTURE "ENSEMBLE" A TERME @note
-// Pourquoi pas écrire une fonction transformant un [tab + ind] en Ensemble ? Plus simple, on a le nb d'éléments dans ind @note
+/* Nous nous sommes rendus compte que le champ pere de la structure Rationnel n'est pas mis à jour.
+Nous avons donc écrit une fonction récursive pour faire cela.*/
+
+void pere_a_jour(Rationnel * rat, Rationnel * last)
+{
+   rat->pere = last;
+
+   if (fils_gauche(rat) != NULL) //Si le fils gauche existe, on met à jour le père du fil gauche
+   {
+      pere_a_jour(fils_gauche(rat), rat);
+   }
+
+   if (fils_droit(rat) != NULL)// De même pour le fils droit
+   {
+      pere_a_jour(fils_droit(rat), rat);
+   }
+}
+
 
 bool premier_aux (Rationnel * rat, Ensemble * ens){
    switch(get_etiquette(rat)){
       case EPSILON:
+      //Si c'est le mot vide, on ne fait rien, donc on renvoie false
+      //pour dire que rien n'a été ajouté
          return false;
          break;
       case LETTRE:
+      //Si c'est une lettre, on renvoie true car on a ajouté un élément 
+      //dans l'ensemble
          ajouter_element(ens, get_position_min(rat));
          return true;
          break;
       case STAR:
-         premier_aux(fils_gauche(rat), ens);
+      //SI c'est une étoile, on cherche les premiers du fils gauche
+      //mais on renvoie false, car on n'ajoute pas d'élément
+            premier_aux(fils_gauche(rat), ens);
          return false;
          break;
       case UNION:
+      //Si c'est une union et que des éléments ont été ajoutés dans
+      //le fils gauche, on regarde le sous arbre fils droit, sinon
+      //on ne regarde que le fils droit
          if (premier_aux(fils_gauche(rat), ens)) {
             premier_aux(fils_droit(rat), ens);
             return true;
@@ -418,6 +436,9 @@ bool premier_aux (Rationnel * rat, Ensemble * ens){
          return premier_aux(fils_droit(rat), ens);
          break;
       case CONCAT:
+      //Si c'est une concaténation, si des éléments ont été ajoutés
+      //dans le fils gauche, on renvoie true et on ne regarde pas
+      //le fils droit, sinon on regarde le fils droit
          if (premier_aux(fils_gauche(rat), ens))
             return true;
          premier_aux(fils_droit(rat), ens);
@@ -429,7 +450,7 @@ bool premier_aux (Rationnel * rat, Ensemble * ens){
    return NULL;
 }
 
-// Mauvaise valeur de retour, voir plus haut @note
+
 
 Ensemble * premier(Rationnel *rat)
 {
@@ -475,14 +496,11 @@ Rationnel *miroir_expression_rationnelle(Rationnel *rat)
 }
 
 Ensemble *dernier(Rationnel *rat){
-   // L'ensemble des derniers n'est, au final, que l'ensemble des premiers de l'expression miroir...
+   // L'ensemble des derniers n'est, au final, que l'ensemble des premiers de l'expression miroir
    Rationnel * r = miroir_expression_rationnelle(rat);
    return premier(r);
 }
 
-// Pour "suivant" @note
-// Parcours itératif de l'arbre, et à chaque noeud "LETTRE" on teste la position, on return si c'est la bonne @note
-// Autre solution plus optimale, utiliser les position_min et position_max des noeuds @note
 
 Rationnel* find_position(Rationnel* rat, int position){
    if (get_etiquette(rat) == LETTRE && get_position_min(rat) == position)
@@ -504,22 +522,10 @@ Rationnel* find_position(Rationnel* rat, int position){
 
 }
 
-void pere_a_jour(Rationnel * rat, Rationnel * last)
-{
-   rat->pere = last;
-
-   if (fils_gauche(rat) != NULL)
-   {
-      pere_a_jour(fils_gauche(rat), rat);
-   }
-
-   if (fils_droit(rat) != NULL)
-   {
-      pere_a_jour(fils_droit(rat), rat);
-   }
-}
-
-// Pseudo-code pour l'instant. Avant de la finaliser, peut-^etre s'intéresser à la structure Ensemble. @note
+/*Cette fonction ne fonctionne pas pour le dernier test dans test_suivant. 
+Pour la dernière concaténation, (a.b*), on regarde b* alors qu'on ne devrait pas
+car l'arbre n'a pas été implémenté comme on le pensait. 
+*/
 
 Ensemble *suivant(Rationnel *rat, int position)
 {
@@ -545,10 +551,11 @@ Ensemble *suivant(Rationnel *rat, int position)
 
    Ensemble * ens = creer_ensemble(NULL, NULL, NULL);
 
+   pere_a_jour(rat, NULL);
    Rationnel * r = find_position(rat, position);
    Rationnel * last;
 
-   pere_a_jour(rat, NULL);
+
    while (r!=NULL){
 
       switch (get_etiquette(r)){
@@ -557,7 +564,7 @@ Ensemble *suivant(Rationnel *rat, int position)
          case UNION:
             break;
          case CONCAT:
-            if (last == fils_gauche(r))
+            if (last == fils_gauche(r)) 
                premier_aux(fils_droit(r), ens);
             break;
          case STAR:
@@ -573,18 +580,9 @@ Ensemble *suivant(Rationnel *rat, int position)
 
    return ens;
 }
-
-// Glushkov @note
-
-/* Fonctions pour Glushkov @note
-Automate * creer_automate();
-void liberer_automate( Automate * automate);
-
-void ajouter_etat( Automate * automate, int etat );
-void ajouter_lettre( Automate * automate, char lettre );
-void ajouter_transition( Automate * automate, int origine, char lettre, int fin );
-void ajouter_etat_final( Automate * automate, int etat_final );
-void ajouter_etat_initial( Automate * automate, int etat_initial );
+/*Par manque de temps, et comme la fonction suivant ne marche pas 
+pour tous les cas, nous n'avaons pas pu finir l'implémentation de 
+cette fonction. Il manque juste la partie de code pour ajouter les transitions. 
 */
 
 Automate *Glushkov(Rationnel *rat)
@@ -608,15 +606,8 @@ Automate *Glushkov(Rationnel *rat)
    
    return NULL;
 
-
-
-
-
-
-
 }
 
-// La véritable raison (de vivre) de Glushkov @note
 
 bool meme_langage (const char *expr1, const char* expr2)
 {
@@ -638,16 +629,13 @@ bool meme_langage (const char *expr1, const char* expr2)
    A_FAIRE_RETURN(true);
 }
 
-// <!--
 
-// TODO 2ND PART @note
 
 Systeme systeme(Automate *automate)
 {
    A_FAIRE_RETURN(NULL);
 }
 
-// PRINTS @note
 
 void print_ligne(Rationnel **ligne, int n)
 {
@@ -669,7 +657,6 @@ void print_systeme(Systeme systeme, int n)
    }
 }
 
-// TODO 2ND PART @note
 
 Rationnel **resoudre_variable_arden(Rationnel **ligne, int numero_variable, int n)
 {
@@ -690,5 +677,3 @@ Rationnel *Arden(Automate *automate)
 {
    A_FAIRE_RETURN(NULL);
 }
-
-// -->

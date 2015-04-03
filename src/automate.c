@@ -639,9 +639,6 @@ Automate *automate_accessible( const Automate * automate ){
 	return res;
 }
 
-// TODO @note
-
-// renverser_automate devenu miroir @note
 
 Automate* miroir( const Automate* automate ){
 	Automate * res = creer_automate();
@@ -654,7 +651,7 @@ Automate* miroir( const Automate* automate ){
 	){
 		ajouter_etat( res, get_element( it1 ) );
 	}
-	// On ajoute les états initiaux
+	// On ajoute les états initiaux dans l'ensemble des états finaux
 	for(
 		it1 = premier_iterateur_ensemble( get_initiaux( automate ) );
 		! iterateur_ensemble_est_vide( it1 );
@@ -662,7 +659,7 @@ Automate* miroir( const Automate* automate ){
 	){
 		ajouter_etat_final( res, get_element( it1 ) );
 	}
-	// On ajoute les états finaux
+	// On ajoute les états finaux dans l'ensemble des états initiaux
 	for(
 		it1 = premier_iterateur_ensemble( get_finaux( automate ) );
 		! iterateur_ensemble_est_vide( it1 );
@@ -678,7 +675,7 @@ Automate* miroir( const Automate* automate ){
 	){
 		ajouter_lettre( res, (char) get_element( it1 ) );
 	}
-	// On ajoute les transitions
+	// On ajoute les transitions en inversant l'état de départ et l'état d'arrivée
 	Table_iterateur it2;
 	for(
 		it2 = premier_iterateur_table( automate->transitions );
@@ -879,6 +876,7 @@ Automate * creer_automate_deterministe( const Automate* automate ){
 }
 
 Automate * creer_automate_minimal( const Automate* automate ){
+	//On utilise l'algorithme: miroir puis déterminiser puis miroir et enfin déterminiser
    Automate * a = miroir(automate);
    Automate * a1 = creer_automate_deterministe(a); 
    liberer_automate(a);
@@ -886,11 +884,7 @@ Automate * creer_automate_minimal( const Automate* automate ){
    liberer_automate(a1);
    a1 = creer_automate_deterministe(a);
    liberer_automate(a);
-   //a = creer_automate_deterministe(a);
-   //a = miroir(a);
-   //a = creer_automate_deterministe(a);
-
+   
    return a1;
-   //return a; 
 }
 

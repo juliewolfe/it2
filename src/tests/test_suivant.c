@@ -45,6 +45,7 @@ int test_suivant(){
        Rationnel * rat;
        rat = expression_to_rationnel("(a.a)*.(b*.c)");
        numeroter_rationnel(rat);
+       print_rationnel(rat);
        Ensemble * e = suivant(rat, 2);
        
        TEST(
