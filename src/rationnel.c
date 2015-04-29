@@ -422,7 +422,7 @@ bool premier_aux (Rationnel * rat, Ensemble * ens){
       case STAR:
       //SI c'est une étoile, on cherche les premiers du fils gauche
       //mais on renvoie false, car on n'ajoute pas d'élément
-            premier_aux(fils_gauche(rat), ens);
+         premier_aux(fils_gauche(rat), ens);
          return false;
          break;
       case UNION:
@@ -441,7 +441,8 @@ bool premier_aux (Rationnel * rat, Ensemble * ens){
       //le fils droit, sinon on regarde le fils droit
          if (premier_aux(fils_gauche(rat), ens))
             return true;
-         premier_aux(fils_droit(rat), ens);
+         else if (get_etiquette(fils_droit(rat)) != STAR)
+            premier_aux(fils_droit(rat), ens);
          break;
       default:
          return NULL;
@@ -456,6 +457,7 @@ Ensemble * premier(Rationnel *rat)
 {
    Ensemble * e = creer_ensemble(NULL, NULL, NULL);
 
+   pere_a_jour(rat, NULL);
    premier_aux(rat, e);
 
    return e; 
@@ -564,8 +566,13 @@ Ensemble *suivant(Rationnel *rat, int position)
          case UNION:
             break;
          case CONCAT:
-            if (last == fils_gauche(r)) 
+            if (last == fils_gauche(r))
+            { 
                premier_aux(fils_droit(r), ens);
+               if (!contient_mot_vide(fils_droit(r)))
+                  r = NULL;
+            }
+            
             break;
          case STAR:
             premier_aux(r, ens);
@@ -574,7 +581,8 @@ Ensemble *suivant(Rationnel *rat, int position)
             return NULL;
       }
       last = r;
-      r = r->pere;
+      if (r != NULL)
+         r = r->pere;
       
    }
 
@@ -602,9 +610,10 @@ Automate *Glushkov(Rationnel *rat)
       ajouter_etat_final(aut, get_element(it));
       it = iterateur_suivant_ensemble(it);
    }
+   
 
    
-   return NULL;
+   return aut;
 
 }
 
