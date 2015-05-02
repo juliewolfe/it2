@@ -422,7 +422,7 @@ bool premier_aux (Rationnel * rat, Ensemble * ens){
       case STAR:
       //SI c'est une étoile, on cherche les premiers du fils gauche
       //mais on renvoie false, car on n'ajoute pas d'élément
-         premier_aux(fils_gauche(rat), ens);
+         premier_aux(fils(rat), ens);
          return false;
          break;
       case UNION:
@@ -439,10 +439,15 @@ bool premier_aux (Rationnel * rat, Ensemble * ens){
       //Si c'est une concaténation, si des éléments ont été ajoutés
       //dans le fils gauche, on renvoie true et on ne regarde pas
       //le fils droit, sinon on regarde le fils droit
-         if (premier_aux(fils_gauche(rat), ens))
-            return true;
-         else if (get_etiquette(fils_droit(rat)) != STAR)
+         if (contient_mot_vide(fils_gauche(rat)))
+         {
+            premier_aux(fils_gauche(rat), ens);
             premier_aux(fils_droit(rat), ens);
+
+            return true;
+         }
+         else
+            return premier_aux(fils_gauche(rat), ens);
          break;
       default:
          return NULL;
@@ -474,7 +479,10 @@ Rationnel *miroir_expression_rationnelle(Rationnel *rat)
          return Epsilon();
          break;
       case LETTRE:
-         return Lettre(get_lettre(rat));
+         f1 = Lettre(get_lettre(rat));
+         set_position_min(f1, get_position_min(rat));
+         set_position_max(f1, get_position_max(rat));
+         return f1;
          break;
       case UNION:
          f1 = miroir_expression_rationnelle(fils_gauche(rat));
@@ -632,8 +640,9 @@ Automate *Glushkov(Rationnel *rat)
       it = iterateur_suivant_ensemble(it);
    }
 
-   liberer_ensemble(ens);
-   
+   if (contient_mot_vide(rat))
+      ajouter_etat_final(aut, 0);
+
    const Ensemble * etat = get_etats(aut);
    it = premier_iterateur_ensemble(etat);
  
@@ -654,7 +663,6 @@ Automate *Glushkov(Rationnel *rat)
    it = premier_iterateur_ensemble(ens);
    while(iterateur_ensemble_est_vide(it) != 1) 
    {
-      printf("coucou");
       ajouter_etat_final(aut, get_element(it));
       it = iterateur_suivant_ensemble(it);
    }

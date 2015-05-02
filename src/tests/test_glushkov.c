@@ -33,7 +33,6 @@ int test_glushkov(){
        rat = expression_to_rationnel("a.b");
        numeroter_rationnel(rat);
        Automate * automate = Glushkov(rat);
-       print_automate(automate);
        
        TEST(
           1
@@ -52,6 +51,8 @@ int test_glushkov(){
        rat = expression_to_rationnel("(a.a)*.(b*.c)*");
        numeroter_rationnel(rat);
        Automate * automate = Glushkov(rat);
+       print_automate(automate);
+
        
        TEST(
           1
@@ -70,6 +71,7 @@ int test_glushkov(){
        rat = expression_to_rationnel("(a.a)*.(b+c*).a.b*");
        numeroter_rationnel(rat);
        Automate * automate = Glushkov(rat);
+
        
        TEST(
           1
