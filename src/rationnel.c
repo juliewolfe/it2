@@ -500,6 +500,7 @@ Rationnel *miroir_expression_rationnelle(Rationnel *rat)
 Ensemble *dernier(Rationnel *rat){
    // L'ensemble des derniers n'est, au final, que l'ensemble des premiers de l'expression miroir
    Rationnel * r = miroir_expression_rationnelle(rat);
+   print_rationnel(r);
    return premier(r);
 }
 
@@ -588,6 +589,31 @@ Ensemble *suivant(Rationnel *rat, int position)
 
    return ens;
 }
+
+char get_position_lettre(Rationnel * rat, int position)
+{
+   switch(get_etiquette(rat))
+   {
+      case EPSILON:
+         break;
+      case LETTRE:
+         if (get_position_min(rat) == position)
+            return rat->lettre;
+         break;
+      case STAR:
+         return get_position_lettre(fils(rat), position);
+         break;
+      case UNION:
+      case CONCAT:
+         if (position <= get_position_max(fils_gauche(rat)))
+            return get_position_lettre(fils_gauche(rat), position);
+         else
+            return get_position_lettre(fils_droit(rat), position);
+         break;
+   }
+
+   return 0;
+}
 /*Par manque de temps, et comme la fonction suivant ne marche pas 
 pour tous les cas, nous n'avaons pas pu finir l'implémentation de 
 cette fonction. Il manque juste la partie de code pour ajouter les transitions. 
@@ -599,20 +625,40 @@ Automate *Glushkov(Rationnel *rat)
 
    Ensemble * ens = premier(rat);
    Ensemble_iterateur it = premier_iterateur_ensemble(ens);
-   while(iterateur_ensemble_est_vide(it)!=1) {
-      ajouter_etat_initial(aut, get_element(it));
+   ajouter_etat_initial(aut, 0);
+   while(iterateur_ensemble_est_vide(it) != 1) 
+   {
+      ajouter_transition(aut, 0, get_position_lettre(rat, get_element(it)), get_element(it));
       it = iterateur_suivant_ensemble(it);
    }
+
+   liberer_ensemble(ens);
    
+   const Ensemble * etat = get_etats(aut);
+   it = premier_iterateur_ensemble(etat);
+ 
+   while(iterateur_ensemble_est_vide(it) != 1)
+   {
+      Ensemble * next = suivant(rat, get_element(it));
+      Ensemble_iterateur it1 = premier_iterateur_ensemble(next);
+      while (iterateur_ensemble_est_vide(it1) != 1)
+      {
+         ajouter_transition(aut, get_element(it), get_position_lettre(rat, get_element(it1)), get_element(it1));
+         it1 = iterateur_suivant_ensemble(it1);
+      }
+      it = iterateur_suivant_ensemble(it);
+      
+   }
+
    ens = dernier(rat);
    it = premier_iterateur_ensemble(ens);
-   while(iterateur_ensemble_est_vide(it)!=1) {
+   while(iterateur_ensemble_est_vide(it) != 1) 
+   {
+      printf("coucou");
       ajouter_etat_final(aut, get_element(it));
       it = iterateur_suivant_ensemble(it);
    }
-   
 
-   
    return aut;
 
 }
