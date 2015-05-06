@@ -30,7 +30,11 @@
 #include <assert.h>
 #include <stdio.h>
 
-
+typedef struct data_meme_langage 
+{ 
+   bool estDansSecondAutomate; 
+   Automate* a; 
+} Data;
 
 int yyparse(Rationnel **rationnel, yyscan_t scanner);
 
@@ -659,6 +663,7 @@ Automate *Glushkov(Rationnel *rat)
       
    }
 
+   liberer_ensemble(ens);
    ens = dernier(rat);
    it = premier_iterateur_ensemble(ens);
    while(iterateur_ensemble_est_vide(it) != 1) 
@@ -671,25 +676,59 @@ Automate *Glushkov(Rationnel *rat)
 
 }
 
+void testerAutomateDans(int origine, char lettre, int fin, void * data)
+{ 
+   Data * a = (Data *) data; 
+   if (!est_une_transition_de_l_automate(a->a, origine, lettre, fin))
+   { 
+      a->estDansSecondAutomate = false; 
+   } 
+}
 
 bool meme_langage (const char *expr1, const char* expr2)
 {
+
    // expr ---(expr_to_rationnel)--> Rationnel* ---(Glushkov)--> Automate*
    // On minimalise les automates, et on les compare
    Rationnel* rat1, *rat2;
    rat1 = expression_to_rationnel(expr1);
    rat2 = expression_to_rationnel(expr2);
 
+   print_rationnel(rat1);
+
    Automate * aut1, *aut2;
    aut1 = Glushkov(rat1);
    aut2 = Glushkov(rat2);
 
+   //print_automate(aut1);
+   //print_automate(aut2);
+
    aut1 = creer_automate_minimal(aut1);
    aut2 = creer_automate_minimal(aut2);
 
-   // Reste à les comparer
 
-   A_FAIRE_RETURN(true);
+
+   if (comparer_ensemble(aut1->vide, aut2->vide) == 0 && comparer_ensemble(aut1->etats, aut2->etats) == 0 && comparer_ensemble(aut1->initiaux, aut2->initiaux) && comparer_ensemble(aut1->finaux, aut2->finaux))
+   {
+         Data * d = malloc(sizeof(Data)); 
+         d->estDansSecondAutomate = true; 
+         d->a = aut2; 
+         
+         pour_toute_transition(aut1, testerAutomateDans, d);
+
+         //if (d->estDansSecondAutomate == true)
+         //{
+            Data * d1 = malloc(sizeof(Data)); 
+            d1->estDansSecondAutomate = true; 
+            d1->a = aut1;
+            pour_toute_transition(aut2, testerAutomateDans, d1); 
+
+            return d->estDansSecondAutomate && d1->estDansSecondAutomate;
+         //}
+
+   }
+
+   return false;
 }
 
 
