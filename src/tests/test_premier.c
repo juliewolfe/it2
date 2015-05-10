@@ -46,9 +46,7 @@ int test_premier(){
        Rationnel * rat;
        rat = expression_to_rationnel("(a.a)*.(b.c)");
        numeroter_rationnel(rat);
-       print_rationnel(rat);
        Ensemble * e = premier(rat);
-       print_ensemble(e, NULL);
        
        TEST(
           1
@@ -63,7 +61,6 @@ int test_premier(){
        Rationnel * rat;
        rat = expression_to_rationnel("(a.a)*.(b+c)");
        numeroter_rationnel(rat);
-       print_rationnel(rat);
        Ensemble * e = premier(rat);
        
        TEST(

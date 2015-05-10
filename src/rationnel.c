@@ -36,6 +36,12 @@ typedef struct data_meme_langage
    Automate* a; 
 } Data;
 
+typedef struct data_systeme
+{
+   int taille;
+   Systeme sys;
+}Datasys;
+
 int yyparse(Rationnel **rationnel, yyscan_t scanner);
 
 
@@ -636,40 +642,47 @@ Automate *Glushkov(Rationnel *rat)
    Automate* aut = creer_automate();
 
    Ensemble * ens = premier(rat);
-   Ensemble_iterateur it = premier_iterateur_ensemble(ens);
+   Ensemble_iterateur it;
    ajouter_etat_initial(aut, 0);
-   while(iterateur_ensemble_est_vide(it) != 1) 
+   for (it = premier_iterateur_ensemble(ens);
+      iterateur_ensemble_est_vide(it) != 1;
+      it = iterateur_suivant_ensemble(it)) 
    {
       ajouter_transition(aut, 0, get_position_lettre(rat, get_element(it)), get_element(it));
-      it = iterateur_suivant_ensemble(it);
+      
    }
 
    if (contient_mot_vide(rat))
       ajouter_etat_final(aut, 0);
 
    const Ensemble * etat = get_etats(aut);
-   it = premier_iterateur_ensemble(etat);
+
  
-   while(iterateur_ensemble_est_vide(it) != 1)
+   for (it = premier_iterateur_ensemble(etat);
+      iterateur_ensemble_est_vide(it) != 1;
+      it = iterateur_suivant_ensemble(it))
    {
       Ensemble * next = suivant(rat, get_element(it));
-      Ensemble_iterateur it1 = premier_iterateur_ensemble(next);
-      while (iterateur_ensemble_est_vide(it1) != 1)
+      Ensemble_iterateur it1;
+      for (it1 = premier_iterateur_ensemble(next);
+         iterateur_ensemble_est_vide(it1) != 1;
+         it1 = iterateur_suivant_ensemble(it1))
       {
          ajouter_transition(aut, get_element(it), get_position_lettre(rat, get_element(it1)), get_element(it1));
-         it1 = iterateur_suivant_ensemble(it1);
+
       }
-      it = iterateur_suivant_ensemble(it);
+
       
    }
 
-   liberer_ensemble(ens);
+   vider_ensemble(ens);
    ens = dernier(rat);
-   it = premier_iterateur_ensemble(ens);
-   while(iterateur_ensemble_est_vide(it) != 1) 
+
+   for ( it = premier_iterateur_ensemble(ens);
+      iterateur_ensemble_est_vide(it) != 1;
+      it = iterateur_suivant_ensemble(it)) 
    {
       ajouter_etat_final(aut, get_element(it));
-      it = iterateur_suivant_ensemble(it);
    }
 
    return aut;
@@ -685,30 +698,13 @@ void testerAutomateDans(int origine, char lettre, int fin, void * data)
    } 
 }
 
-bool meme_langage (const char *expr1, const char* expr2)
+
+bool automates_reconnaissent_le_meme_langage (Automate * aut1, Automate * aut2)
 {
-
-   // expr ---(expr_to_rationnel)--> Rationnel* ---(Glushkov)--> Automate*
-   // On minimalise les automates, et on les compare
-   Rationnel* rat1, *rat2;
-   rat1 = expression_to_rationnel(expr1);
-   rat2 = expression_to_rationnel(expr2);
-
-   print_rationnel(rat1);
-
-   Automate * aut1, *aut2;
-   aut1 = Glushkov(rat1);
-   aut2 = Glushkov(rat2);
-
-   //print_automate(aut1);
-   //print_automate(aut2);
-
    aut1 = creer_automate_minimal(aut1);
    aut2 = creer_automate_minimal(aut2);
 
-
-
-   if (comparer_ensemble(aut1->vide, aut2->vide) == 0 && comparer_ensemble(aut1->etats, aut2->etats) == 0 && comparer_ensemble(aut1->initiaux, aut2->initiaux) && comparer_ensemble(aut1->finaux, aut2->finaux))
+     if (comparer_ensemble(aut1->vide, aut2->vide) == 0 && comparer_ensemble(aut1->etats, aut2->etats) == 0 && comparer_ensemble(aut1->initiaux, aut2->initiaux) && comparer_ensemble(aut1->finaux, aut2->finaux))
    {
          Data * d = malloc(sizeof(Data)); 
          d->estDansSecondAutomate = true; 
@@ -732,10 +728,61 @@ bool meme_langage (const char *expr1, const char* expr2)
 }
 
 
+bool meme_langage (const char *expr1, const char* expr2)
+{
+
+   // expr ---(expr_to_rationnel)--> Rationnel* ---(Glushkov)--> Automate*
+   // On minimalise les automates, et on les compare
+   Rationnel* rat1, *rat2;
+   rat1 = expression_to_rationnel(expr1);
+   print_rationnel(rat1);
+   rat2 = expression_to_rationnel(expr2);
+
+   Automate * aut1, *aut2;
+   aut1 = Glushkov(rat1);
+   //print_automate(aut1);
+   aut2 = Glushkov(rat2);
+
+   return automates_reconnaissent_le_meme_langage(aut1, aut2);
+
+}
+
+void remplir_matrice(int origine, char lettre, int fin, void * data)
+{
+   Systeme sys = (Systeme) data;
+   sys[origine][fin] = Lettre(lettre);
+}
+
+void ajouter_epsilon(const intptr_t element, void * data)
+{
+   Datasys * d = (Datasys *) data;
+   Systeme sys = d->sys;
+   int etat = (int) element;
+
+   int colonne = d->taille;
+   sys[etat][colonne] = Epsilon();
+}
+
 
 Systeme systeme(Automate *automate)
 {
-   A_FAIRE_RETURN(NULL);
+   const Ensemble * ens = get_etats(automate);
+   int taille = taille_ensemble(ens);
+   Systeme sys = malloc(taille * sizeof(Rationnel **));
+
+   for (int ind = 0; ind < taille; ind++)
+      sys[ind] = malloc((taille + 1) * sizeof(Rationnel *));
+
+   pour_toute_transition(automate, remplir_matrice, sys);
+   ens = get_finaux(automate);
+
+   Datasys * data = malloc (sizeof(Datasys));
+   data->taille = taille;
+   data->sys = sys;
+
+   pour_tout_element(ens, ajouter_epsilon, data);
+
+   return sys;
 }
 
 
@@ -760,22 +807,60 @@ void print_systeme(Systeme systeme, int n)
 }
 
 
-Rationnel **resoudre_variable_arden(Rationnel **ligne, int numero_variable, int n)
+Rationnel **resoudre_variable_arden(Rationnel **ligne, int numero_variable, int nb_vars)
 {
-   A_FAIRE_RETURN(NULL);
+   if (ligne[numero_variable] == NULL)
+      return ligne;
+
+   for (int i = 0; i <= nb_vars; i++)
+   {
+      if (ligne[i] != NULL && i != numero_variable)
+         ligne[i] = Concat(Star(ligne[numero_variable]), ligne[i]);
+   }
+
+   ligne[numero_variable] = NULL;
+   return ligne;
 }
 
 Rationnel **substituer_variable(Rationnel **ligne, int numero_variable, Rationnel **valeur_variable, int n)
 {
-   A_FAIRE_RETURN(NULL);
-}
+   if (ligne[numero_variable] == NULL)
+      return ligne;
 
-Systeme resoudre_systeme(Systeme systeme, int n)
+   for (int i = 0; i <= n; i++)
+   {
+      if (valeur_variable[i] != NULL && i != numero_variable)
+      {
+         if (ligne[i] == NULL)
+            ligne[i] = Concat(ligne[numero_variable], valeur_variable[i]);
+         else
+            ligne[i] = Union(ligne[i], Concat(ligne[numero_variable], valeur_variable[i]));
+      }
+   }
+
+   ligne[numero_variable] = NULL;
+   return ligne;
+}  
+
+
+Systeme resoudre_systeme(Systeme systeme, int nb_vars)
 {
-   A_FAIRE_RETURN(NULL);
+   for (int i = nb_vars - 1; i >= 0; i--)
+   {
+      systeme[i] = resoudre_variable_arden(systeme[i], i, nb_vars);
+
+      for (int j = 0; j < i; j++)
+         systeme[j] = substituer_variable(systeme[j], i, systeme[i], nb_vars);
+   }
+
+   return systeme;
 }
 
 Rationnel *Arden(Automate *automate)
 {
-   A_FAIRE_RETURN(NULL);
+   Systeme sys = systeme(automate);
+   int taille = taille_ensemble(get_etats(automate));
+   sys = resoudre_systeme(sys, taille);
+
+   return sys[0][taille];
 }

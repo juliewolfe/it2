@@ -1,8 +1,20 @@
+tests/test_numeroter_rationnel: tests/test_numeroter_rationnel.o libautomate.a
+tests/test_contient_mot_vide: tests/test_contient_mot_vide.o libautomate.a
 tests/test_meme_langage: tests/test_meme_langage.o libautomate.a
+tests/test_delta_delta_star: tests/test_delta_delta_star.o libautomate.a
 tests/test_creer_automate_determisite: tests/test_creer_automate_determisite.o libautomate.a
+tests/test_automate_accessible: tests/test_automate_accessible.o libautomate.a
+tests/test_dernier: tests/test_dernier.o libautomate.a
+tests/test_ensemble: tests/test_ensemble.o libautomate.a
+tests/test_automate_mirroir: tests/test_automate_mirroir.o libautomate.a
 tests/test_premier: tests/test_premier.o libautomate.a
+tests/test_etats_accessibles: tests/test_etats_accessibles.o libautomate.a
+tests/test_creer_automate: tests/test_creer_automate.o libautomate.a
+tests/test_automate_vide: tests/test_automate_vide.o libautomate.a
+tests/test_mot_accepte: tests/test_mot_accepte.o libautomate.a
 tests/test_creer_automate_minimal: tests/test_creer_automate_minimal.o libautomate.a
 tests/test_glushkov: tests/test_glushkov.o libautomate.a
 tests/test_suivant: tests/test_suivant.o libautomate.a
 tests/test_automate_miroir: tests/test_automate_miroir.o libautomate.a
+tests/test_table: tests/test_table.o libautomate.a
 
