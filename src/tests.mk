@@ -1,5 +1,6 @@
 tests/test_numeroter_rationnel: tests/test_numeroter_rationnel.o libautomate.a
 tests/test_contient_mot_vide: tests/test_contient_mot_vide.o libautomate.a
+tests/test_arden: tests/test_arden.o libautomate.a
 tests/test_meme_langage: tests/test_meme_langage.o libautomate.a
 tests/test_delta_delta_star: tests/test_delta_delta_star.o libautomate.a
 tests/test_creer_automate_determisite: tests/test_creer_automate_determisite.o libautomate.a

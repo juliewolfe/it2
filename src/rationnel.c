@@ -397,8 +397,8 @@ bool contient_mot_vide(Rationnel *rat){
 
 }
 
-/* Nous nous sommes rendus compte que le champ pere de la structure Rationnel n'est pas mis à jour.
-Nous avons donc écrit une fonction récursive pour faire cela.*/
+/* Met à jour le champ "pere" de tous les noeuds du Rationnel 
+* (corrige le bug ne le mettant pas à jour durant l'édition d'un Rationnel) */
 
 void pere_a_jour(Rationnel * rat, Rationnel * last)
 {
@@ -415,6 +415,8 @@ void pere_a_jour(Rationnel * rat, Rationnel * last)
    }
 }
 
+/* Ajoute dans l'Ensemble toutes les lettres pouvant se trouver à la première place 
+* d'un mot décrit par le Rationnel. */
 
 bool premier_aux (Rationnel * rat, Ensemble * ens){
    switch(get_etiquette(rat)){
@@ -426,8 +428,7 @@ bool premier_aux (Rationnel * rat, Ensemble * ens){
       case LETTRE:
       //Si c'est une lettre, on renvoie true car on a ajouté un élément 
       //dans l'ensemble
-         printf("%d\n", get_position_min(rat))
-;         ajouter_element(ens, get_position_min(rat));
+         ajouter_element(ens, get_position_min(rat));
          return true;
          break;
       case STAR:
@@ -478,6 +479,9 @@ Ensemble * premier(Rationnel *rat)
    return e; 
 }
 
+/** Retourne le langage "miroir", c'est-à-dire celui qui reconnaît tous les mots 
+* reconnus par le langage mais à l'envers. 
+*(un palindrome est reconnu par les deux langages, du coup) */
 Rationnel *miroir_expression_rationnelle(Rationnel *rat)
 {
    if(!rat)
@@ -516,13 +520,14 @@ Rationnel *miroir_expression_rationnelle(Rationnel *rat)
 }
 
 Ensemble *dernier(Rationnel *rat){
-   // L'ensemble des derniers n'est, au final, que l'ensemble des premiers de l'expression miroir
+   /* L'ensemble des derniers n'est, au final, que l'ensemble des premiers 
+   * de l'expression miroir */
    Rationnel * r = miroir_expression_rationnelle(rat);
    print_rationnel(r);
    return premier(r);
 }
 
-
+/* Retrouve le Rationnel correspondant à la position donnée. */
 Rationnel* find_position(Rationnel* rat, int position){
    if (get_etiquette(rat) == LETTRE && get_position_min(rat) == position)
    {
@@ -543,33 +548,10 @@ Rationnel* find_position(Rationnel* rat, int position){
 
 }
 
-/*Cette fonction ne fonctionne pas pour le dernier test dans test_suivant. 
-Pour la dernière concaténation, (a.b*), on regarde b* alors qu'on ne devrait pas
-car l'arbre n'a pas été implémenté comme on le pensait. 
-*/
-
+/* Ajoute dans l'Ensemble toutes les lettres pouvant suivre la lettre donnée. */
 Ensemble *suivant(Rationnel *rat, int position)
 {
-   /*
-   ALGORITHME :
-   parcours jusqu'à la position
-   remonter l'arbre :
-   - si UNION :
-      remonter // Dans (a+b), on se fiche de laquelle a été mise, l'autre ne le sera pas
-   - si CONCAT :
-      - si FG :
-         premier_aux(FD)
-      remonter // Dans (a.b), si on a mis a (FG), on doit mettre b (globalement, les "premier" du FD), sinon rien à mettre
-   - si EPSILON :
-      remonter
-   - si STAR :
-      premier_aux(self) // Dans R*, quelle que soit R, on peut mettre les "premier" de R
-      remonter
-   - si LETTRE :
-      normalement impossible puisqu'on ne fait que remonter
-   une fois à la racine, on renvoie.
-   */
-
+ 
    Ensemble * ens = creer_ensemble(NULL, NULL, NULL);
 
    pere_a_jour(rat, NULL);
@@ -608,6 +590,8 @@ Ensemble *suivant(Rationnel *rat, int position)
    return ens;
 }
 
+/* Retourne la lettre correspondant à la position donnée. 
+* (composée simplifiée de get_lettre(find_position(rat, position)) */
 char get_position_lettre(Rationnel * rat, int position)
 {
    switch(get_etiquette(rat))
@@ -632,11 +616,8 @@ char get_position_lettre(Rationnel * rat, int position)
 
    return 0;
 }
-/*Par manque de temps, et comme la fonction suivant ne marche pas 
-pour tous les cas, nous n'avaons pas pu finir l'implémentation de 
-cette fonction. Il manque juste la partie de code pour ajouter les transitions. 
-*/
 
+/* Retourne un automate décrivant le langage décrit par le Rationnel donné. */
 Automate *Glushkov(Rationnel *rat)
 {
    Automate* aut = creer_automate();
@@ -672,8 +653,7 @@ Automate *Glushkov(Rationnel *rat)
          ajouter_transition(aut, get_element(it), get_position_lettre(rat, get_element(it1)), get_element(it1));
 
       }
-
-      
+  
    }
 
    vider_ensemble(ens);
@@ -690,6 +670,9 @@ Automate *Glushkov(Rationnel *rat)
 
 }
 
+/* Fonction appelée par pour_toute_transition.
+* Teste si une transition d'un automate se trouve dans un
+* autre automate */
 void testerAutomateDans(int origine, char lettre, int fin, void * data)
 { 
    Data * a = (Data *) data; 
@@ -699,44 +682,50 @@ void testerAutomateDans(int origine, char lettre, int fin, void * data)
    } 
 }
 
-
+/* Vérifie que deux automates quelconques vérifient le même langage. */
 bool automates_reconnaissent_le_meme_langage (Automate * aut1, Automate * aut2)
 {
    aut1 = creer_automate_minimal(aut1);
    aut2 = creer_automate_minimal(aut2);
 
-     if (comparer_ensemble(aut1->vide, aut2->vide) == 0 && comparer_ensemble(aut1->etats, aut2->etats) == 0 && comparer_ensemble(aut1->initiaux, aut2->initiaux) && comparer_ensemble(aut1->finaux, aut2->finaux))
-   {
-         Data * d = malloc(sizeof(Data)); 
-         d->estDansSecondAutomate = true; 
-         d->a = aut2; 
-         
-         pour_toute_transition(aut1, testerAutomateDans, d);
 
-         //if (d->estDansSecondAutomate == true)
-         //{
-            Data * d1 = malloc(sizeof(Data)); 
-            d1->estDansSecondAutomate = true; 
-            d1->a = aut1;
-            pour_toute_transition(aut2, testerAutomateDans, d1); 
+     if (comparer_ensemble(aut1->vide, aut2->vide) == 0) 
+     {
+      if (comparer_ensemble(aut1->etats, aut2->etats) == 0) 
+      {
+         if (comparer_ensemble(aut1->initiaux, aut2->initiaux) == 0) 
+         {
+            if (comparer_ensemble(aut1->finaux, aut2->finaux) == 0)
+            {
+               Data * d = malloc(sizeof(Data)); 
+               d->estDansSecondAutomate = true; 
+               d->a = aut2; 
+            
+               pour_toute_transition(aut1, testerAutomateDans, d);
 
-            return d->estDansSecondAutomate && d1->estDansSecondAutomate;
-         //}
+               Data * d1 = malloc(sizeof(Data)); 
+               d1->estDansSecondAutomate = true; 
+               d1->a = aut1;
+               pour_toute_transition(aut2, testerAutomateDans, d1); 
 
+               return d->estDansSecondAutomate && d1->estDansSecondAutomate;
+            }
+         }
+      }
    }
 
    return false;
 }
 
-
+/* Vérifie que deux expressions rationnelles textuelles (char*) reconnaissent 
+* le même langage. */
 bool meme_langage (const char *expr1, const char* expr2)
 {
 
-   // expr ---(expr_to_rationnel)--> Rationnel* ---(Glushkov)--> Automate*
-   // On minimalise les automates, et on les compare
+   /*expr ---(expr_to_rationnel)--> Rationnel* ---(Glushkov)--> Automate*
+   * On minimalise les automates, et on les compare. */
    Rationnel* rat1, *rat2;
    rat1 = expression_to_rationnel(expr1);
-   print_rationnel(rat1);
    rat2 = expression_to_rationnel(expr2);
 
    numeroter_rationnel(rat1);
@@ -744,9 +733,9 @@ bool meme_langage (const char *expr1, const char* expr2)
 
    Automate * aut1, *aut2;
    aut1 = Glushkov(rat1);
-   //print_automate(aut1);
    aut2 = Glushkov(rat2);
 
+  
    return automates_reconnaissent_le_meme_langage(aut1, aut2);
 
 }
@@ -849,6 +838,9 @@ Rationnel **substituer_variable(Rationnel **ligne, int numero_variable, Rationne
 
 Systeme resoudre_systeme(Systeme systeme, int nb_vars)
 {
+   /* Les deux fonctions gèrent elles-mêmes tous les cas.
+   *Dans le cas où on n'a pas besoin de les appeler, elles
+   *ne feront rien. */
    for (int i = nb_vars - 1; i >= 0; i--)
    {
       systeme[i] = resoudre_variable_arden(systeme[i], i, nb_vars);
@@ -860,10 +852,13 @@ Systeme resoudre_systeme(Systeme systeme, int nb_vars)
    return systeme;
 }
 
+/* Retourne un Rationnel décrivant l'automate donné. */
 Rationnel *Arden(Automate *automate)
 {
+   // Crée une matrice représentant le système d'équations de l'automate
    Systeme sys = systeme(automate);
    int taille = taille_ensemble(get_etats(automate));
+   // Résoud le système et sauvegarde le résultat dans sys[0][taille]
    sys = resoudre_systeme(sys, taille);
 
    return sys[0][taille];

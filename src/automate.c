@@ -875,8 +875,11 @@ Automate * creer_automate_deterministe( const Automate* automate ){
 	return res;
 }
 
+/*  Renvoie l'automate donné minimalisé.
+*Pour cela, on déterminise l'automate miroir et
+* on le fait deux fois. */
 Automate * creer_automate_minimal( const Automate* automate ){
-	//On utilise l'algorithme: miroir puis déterminiser puis miroir et enfin déterminiser
+	
    Automate * a = miroir(automate);
    Automate * a1 = creer_automate_deterministe(a); 
    liberer_automate(a);
