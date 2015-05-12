@@ -426,7 +426,8 @@ bool premier_aux (Rationnel * rat, Ensemble * ens){
       case LETTRE:
       //Si c'est une lettre, on renvoie true car on a ajouté un élément 
       //dans l'ensemble
-         ajouter_element(ens, get_position_min(rat));
+         printf("%d\n", get_position_min(rat))
+;         ajouter_element(ens, get_position_min(rat));
          return true;
          break;
       case STAR:
@@ -465,7 +466,6 @@ bool premier_aux (Rationnel * rat, Ensemble * ens){
 
    return NULL;
 }
-
 
 
 Ensemble * premier(Rationnel *rat)
@@ -648,6 +648,7 @@ Automate *Glushkov(Rationnel *rat)
       iterateur_ensemble_est_vide(it) != 1;
       it = iterateur_suivant_ensemble(it)) 
    {
+      ajouter_etat(aut, get_element(it));
       ajouter_transition(aut, 0, get_position_lettre(rat, get_element(it)), get_element(it));
       
    }
@@ -737,6 +738,9 @@ bool meme_langage (const char *expr1, const char* expr2)
    rat1 = expression_to_rationnel(expr1);
    print_rationnel(rat1);
    rat2 = expression_to_rationnel(expr2);
+
+   numeroter_rationnel(rat1);
+   numeroter_rationnel(rat2);
 
    Automate * aut1, *aut2;
    aut1 = Glushkov(rat1);
